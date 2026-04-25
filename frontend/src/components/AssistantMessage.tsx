@@ -34,10 +34,6 @@ const tooltipStyle = {
 
 const PIE_COLORS = ["#4a8bb8", "#5b9fd4", "#7eb8e8", "#9cc0d8", "#c4d8e8", "#a8b8c8"];
 
-function fmt(n: number | null | undefined) {
-  if (n == null || Number.isNaN(n)) return "—";
-  return Math.round(n).toLocaleString();
-}
 
 function LineViz({ spec }: { spec: TimeSeriesChartSpec }) {
   const data = spec.x_labels.map((name, i) => ({
@@ -283,46 +279,6 @@ function VerdictPanel({ verdict }: { verdict: VerdictPayload }) {
   );
 }
 
-function MetricGrid({ m }: { m: MetroViz }) {
-  const items: { k: string; v: string }[] = [
-    { k: "Mean", v: fmt(m.metric_mean) },
-    { k: "Latest", v: fmt(m.metric_latest) },
-    { k: "Min", v: fmt(m.metric_min) },
-    { k: "Max", v: fmt(m.metric_max) },
-    { k: "Avg (last ≤6 mo)", v: fmt(m.metric_avg_6m) },
-  ];
-  if (m.metric_vs_avg_6m_pct != null && !Number.isNaN(m.metric_vs_avg_6m_pct)) {
-    items.push({
-      k: "Latest vs avg",
-      v: `${m.metric_vs_avg_6m_pct >= 0 ? "+" : ""}${m.metric_vs_avg_6m_pct.toFixed(1)}%`,
-    });
-  }
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-        gap: 8,
-        marginBottom: "1rem",
-      }}
-    >
-      {items.map((x) => (
-        <div
-          key={x.k}
-          style={{
-            background: "rgba(30, 90, 140, 0.1)",
-            borderRadius: 8,
-            padding: "0.5rem 0.65rem",
-            border: "1px solid rgba(30, 90, 140, 0.2)",
-          }}
-        >
-          <div style={{ fontSize: "0.7rem", color: "var(--muted)", textTransform: "uppercase" }}>{x.k}</div>
-          <div style={{ fontWeight: 600, fontSize: "0.95rem" }}>{x.v}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 type Props = {
   reply: string;
@@ -332,11 +288,16 @@ type Props = {
   metros: MetroViz[];
 };
 
+function stripSectionHeaders(text: string): string {
+  return text.replace(/^##\s+(Summary|Output|Takeaways)\s*\n?/gim, "").trim();
+}
+
 export function AssistantMessage({ reply, structured, dataset_note, data_window, metros }: Props) {
   const title = structured?.title?.trim();
   const summary = structured?.summary?.trim();
   const keyPoints = structured?.key_points?.filter((p) => p.trim()) ?? [];
   const caveats = structured?.caveats?.filter((c) => c.trim()) ?? [];
+  const cleanReply = stripSectionHeaders(reply);
 
   return (
     <div
@@ -401,9 +362,9 @@ export function AssistantMessage({ reply, structured, dataset_note, data_window,
         </ul>
       ) : null}
 
-      {reply.trim() ? (
+      {cleanReply ? (
         <div className="assistant-md">
-          <ReactMarkdown>{reply}</ReactMarkdown>
+          <ReactMarkdown>{cleanReply}</ReactMarkdown>
         </div>
       ) : null}
 
@@ -460,12 +421,13 @@ export function AssistantMessage({ reply, structured, dataset_note, data_window,
                 )}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {metro.charts.map((c, i) => (
-                  <ChartBlock key={`${metro.region_id}-${c.kind}-${i}`} chart={c} />
-                ))}
+                {metro.charts
+                  .filter((c: ChartSpec) => !(c.kind === "pie" && c.title.toLowerCase().includes("level comparison")))
+                  .map((c: ChartSpec, i: number) => (
+                    <ChartBlock key={`${metro.region_id}-${c.kind}-${i}`} chart={c} />
+                  ))}
               </div>
               {metro.verdict ? <VerdictPanel verdict={metro.verdict} /> : null}
-              {metro.region_type.toLowerCase() === "ranking" ? null : <MetricGrid m={metro} />}
             </div>
           ))}
         </div>
