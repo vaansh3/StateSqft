@@ -1,0 +1,26 @@
+services:
+  # ── Backend: FastAPI / uvicorn ──────────────────────────────────────────────
+  - type: web
+    name: statesqft-backend
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # Set to your Vercel frontend domain after deploy:
+      # https://statesqft.com,https://www.statesqft.com
+      - key: FRONTEND_ORIGINS
+        sync: false
