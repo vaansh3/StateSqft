@@ -1,3 +1,4 @@
+import React from "react";
 import ReactMarkdown from "react-markdown";
 import {
   CartesianGrid,
@@ -21,6 +22,7 @@ import type {
   TimeSeriesChartSpec,
   VerdictPayload,
 } from "../types/chat";
+
 
 const axisStyle = { fill: "#64748b", fontSize: 11 };
 const gridStyle = { stroke: "rgba(15, 23, 42, 0.08)" };
@@ -292,146 +294,71 @@ function stripSectionHeaders(text: string): string {
   return text.replace(/^##\s+(Summary|Output|Takeaways)\s*\n?/gim, "").trim();
 }
 
-export function AssistantMessage({ reply, structured, dataset_note, data_window, metros }: Props) {
-  const title = structured?.title?.trim();
-  const summary = structured?.summary?.trim();
-  const keyPoints = structured?.key_points?.filter((p) => p.trim()) ?? [];
-  const caveats = structured?.caveats?.filter((c) => c.trim()) ?? [];
+const panelStyle: React.CSSProperties = {
+  padding: "1rem 1.1rem",
+  borderRadius: 12,
+  background: "var(--bubble-ai)",
+  border: "1px solid var(--border-subtle)",
+  color: "var(--text)",
+};
+
+const panelLabelStyle: React.CSSProperties = {
+  fontSize: "0.72rem",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "var(--muted)",
+  marginBottom: 10,
+  fontWeight: 600,
+};
+
+export function AssistantMessage({ reply, structured: _structured, dataset_note, data_window, metros }: Props) {
   const cleanReply = stripSectionHeaders(reply);
 
   return (
-    <div
-      style={{
-        alignSelf: "stretch",
-        width: "100%",
-        maxWidth: 920,
-        padding: "1rem 1.1rem",
-        borderRadius: 12,
-        background: "var(--bubble-ai)",
-        border: "1px solid var(--border-subtle)",
-        color: "var(--text)",
-      }}
-    >
-      {(dataset_note || data_window) && (
-        <div
-          style={{
-            fontSize: "0.78rem",
-            color: "var(--muted)",
-            marginBottom: "0.85rem",
-            paddingBottom: "0.65rem",
-            borderBottom: "1px solid var(--border-subtle)",
-          }}
-        >
-          {data_window ? (
-            <div>
-              <strong style={{ color: "var(--accent)" }}>Period:</strong> {data_window}
-            </div>
-          ) : null}
-          {dataset_note ? (
-            <div style={{ marginTop: 4 }}>
-              <strong style={{ color: "var(--accent)" }}>Data:</strong> {dataset_note}
-            </div>
-          ) : null}
-        </div>
-      )}
+    <div style={{ alignSelf: "stretch", width: "100%", maxWidth: 920, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
 
-      {title ? (
-        <h2 style={{ margin: "0 0 0.65rem", fontSize: "1.15rem", fontWeight: 700, lineHeight: 1.3 }}>{title}</h2>
-      ) : null}
-      {summary ? (
-        <div
-          style={{
-            marginBottom: keyPoints.length || reply.trim() ? "0.85rem" : 0,
-            padding: "0.65rem 0.85rem",
-            borderRadius: 10,
-            background: "rgba(30, 90, 140, 0.08)",
-            border: "1px solid rgba(30, 90, 140, 0.18)",
-            fontSize: "0.92rem",
-            lineHeight: 1.5,
-            color: "var(--text)",
-          }}
-        >
-          {summary}
-        </div>
-      ) : null}
-      {keyPoints.length > 0 ? (
-        <ul style={{ margin: "0 0 0.85rem", paddingLeft: "1.25rem", lineHeight: 1.55, fontSize: "0.9rem" }}>
-          {keyPoints.map((p, i) => (
-            <li key={i}>{p}</li>
-          ))}
-        </ul>
-      ) : null}
-
+      {/* Panel 1 — Answer */}
       {cleanReply ? (
-        <div className="assistant-md">
-          <ReactMarkdown>{cleanReply}</ReactMarkdown>
+        <div style={panelStyle}>
+          <div style={panelLabelStyle}>Answer</div>
+          <div className="assistant-md">
+            <ReactMarkdown>{cleanReply}</ReactMarkdown>
+          </div>
         </div>
       ) : null}
 
-      {caveats.length > 0 ? (
-        <div
-          style={{
-            marginTop: reply.trim() ? "0.85rem" : 0,
-            paddingTop: reply.trim() ? "0.75rem" : 0,
-            borderTop: reply.trim() ? "1px solid var(--border-subtle)" : "none",
-            fontSize: "0.82rem",
-            color: "var(--muted)",
-            lineHeight: 1.5,
-          }}
-        >
-          <div style={{ fontWeight: 600, marginBottom: 6, color: "var(--text)", fontSize: "0.78rem" }}>Notes</div>
-          <ul style={{ margin: 0, paddingLeft: "1.2rem" }}>
-            {caveats.map((c, i) => (
-              <li key={i}>{c}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      {/* Panel 2 — Visualizations (one card per metro) */}
+      {metros.map((metro) => {
+        const visibleCharts = metro.charts.filter(
+          (c: ChartSpec) => !(c.kind === "pie" && c.title.toLowerCase().includes("level comparison"))
+        );
+        const isTimingVerdict =
+          metro.verdict != null &&
+          !(metro.verdict.answer === "unclear" && metro.verdict.headline.startsWith("No Yes / No verdict"));
 
-      {metros.length > 0 ? (
-        <div style={{ marginTop: "1.25rem" }}>
-          <h3
-            style={{
-              fontSize: "0.85rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              color: "var(--muted)",
-              margin: "0 0 0.75rem",
-            }}
-          >
-            Visualizations
-          </h3>
-          {metros.map((metro) => (
-            <div
-              key={metro.region_id}
-              style={{
-                marginBottom: "1.5rem",
-                paddingBottom: "1.25rem",
-                borderBottom: "1px solid var(--border-subtle)",
-              }}
-            >
-              <h4 style={{ margin: "0 0 0.35rem", fontSize: "1.05rem" }}>{metro.region_name}</h4>
-              <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginBottom: "0.75rem" }}>
-                {metro.region_type.toLowerCase() === "ranking" ? (
-                  <>Cross-metro ranking · {metro.period_label}</>
-                ) : (
-                  <>
-                    {metro.region_type.toUpperCase()} · rank {metro.size_rank} · {metro.period_label}
-                  </>
-                )}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {metro.charts
-                  .filter((c: ChartSpec) => !(c.kind === "pie" && c.title.toLowerCase().includes("level comparison")))
-                  .map((c: ChartSpec, i: number) => (
-                    <ChartBlock key={`${metro.region_id}-${c.kind}-${i}`} chart={c} />
-                  ))}
-              </div>
-              {metro.verdict ? <VerdictPanel verdict={metro.verdict} /> : null}
+        return (
+          <div key={metro.region_id} style={panelStyle}>
+            <div style={panelLabelStyle}>
+              {metro.region_type.toLowerCase() === "ranking" ? "Cross-Metro Ranking" : `Visualization · ${metro.region_name}`}
             </div>
-          ))}
-        </div>
-      ) : null}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {visibleCharts.map((c: ChartSpec, i: number) => (
+                <ChartBlock key={`${metro.region_id}-${c.kind}-${i}`} chart={c} />
+              ))}
+            </div>
+
+            {/* 2-line caption */}
+            <div style={{ marginTop: "0.75rem", fontSize: "0.78rem", color: "var(--muted)", lineHeight: 1.6 }}>
+              <div><strong style={{ color: "var(--accent)" }}>Period:</strong> {data_window}</div>
+              <div><strong style={{ color: "var(--accent)" }}>Data:</strong> {dataset_note}</div>
+            </div>
+
+            {/* Verdict — only for sell/buy/timing questions */}
+            {isTimingVerdict ? <VerdictPanel verdict={metro.verdict!} /> : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
