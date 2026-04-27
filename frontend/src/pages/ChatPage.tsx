@@ -118,11 +118,55 @@ function parseChatResponse(j: unknown): ChatApiResponse | null {
   };
 }
 
+const HELP_PROMPTS: { category: string; prompts: string[] }[] = [
+  {
+    category: "Metro Inventory Lookup",
+    prompts: [
+      "What is the current inventory in Austin, TX?",
+      "Show me inventory trends for Miami, FL over the last year.",
+      "How has inventory changed in Seattle, WA since 2022?",
+    ],
+  },
+  {
+    category: "Compare Markets",
+    prompts: [
+      "Compare inventory in Phoenix, AZ vs Denver, CO.",
+      "Which has more inventory right now: Dallas, TX or Houston, TX?",
+      "Show me New York, NY vs Los Angeles, CA inventory side by side.",
+    ],
+  },
+  {
+    category: "Rankings & Top Markets",
+    prompts: [
+      "Which metros have the highest inventory right now?",
+      "What are the top 5 buyer-friendly markets by inventory?",
+      "Which metros saw the biggest inventory increase in the past 6 months?",
+    ],
+  },
+  {
+    category: "Trends & Direction",
+    prompts: [
+      "Is inventory in Chicago, IL going up or down?",
+      "Which metros are showing the fastest inventory growth this year?",
+      "Has national for-sale inventory recovered since 2022?",
+    ],
+  },
+  {
+    category: "Dataset & Coverage",
+    prompts: [
+      "What metros are covered in this dataset?",
+      "What date range does the data cover?",
+      "What does this dataset measure exactly?",
+    ],
+  },
+];
+
 export function ChatPage() {
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [who, setWho] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   const refreshWho = useCallback(async () => {
@@ -250,9 +294,34 @@ export function ChatPage() {
           background: "var(--panel)",
         }}
       >
-        <h1 style={{ margin: 0, fontSize: "1rem", lineHeight: 1.25, color: "var(--text)" }}>
-          StateSqft
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h1 style={{ margin: 0, fontSize: "1rem", lineHeight: 1.25, color: "var(--text)" }}>
+            StateSqft
+          </h1>
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            title="Show example prompts"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              border: "1px solid var(--border-strong)",
+              background: "var(--surface-raised)",
+              color: "var(--accent)",
+              fontWeight: 700,
+              fontSize: "0.78rem",
+              lineHeight: 1,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            ?
+          </button>
+        </div>
         <div>
           <span style={{ color: "var(--muted)", marginRight: 12, fontSize: "0.9rem" }}>{who}</span>
           <button
@@ -405,6 +474,111 @@ export function ChatPage() {
           </button>
         </div>
       </main>
+
+      {helpOpen && (
+        <div
+          onClick={() => setHelpOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+            padding: "1rem",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--surface-raised)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 12,
+              padding: "1.5rem",
+              maxWidth: 560,
+              width: "100%",
+              maxHeight: "80vh",
+              overflowY: "auto",
+              boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "1.1rem",
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: "1rem", color: "var(--text)" }}>
+                Example prompts
+              </h2>
+              <button
+                type="button"
+                onClick={() => setHelpOpen(false)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.25rem",
+                  color: "var(--muted)",
+                  lineHeight: 1,
+                  padding: "0 0.25rem",
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+              This app is backed by a metro for-sale housing inventory dataset covering{" "}
+              <strong>928 metros</strong> from <strong>March 2018 to February 2026</strong>. Click
+              any prompt to use it.
+            </p>
+            {HELP_PROMPTS.map((group) => (
+              <div key={group.category} style={{ marginBottom: "1rem" }}>
+                <p
+                  style={{
+                    margin: "0 0 0.4rem",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "var(--accent)",
+                  }}
+                >
+                  {group.category}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  {group.prompts.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        setInput(p);
+                        setHelpOpen(false);
+                      }}
+                      style={{
+                        textAlign: "left",
+                        background: "var(--surface)",
+                        border: "1px solid var(--border-subtle)",
+                        borderRadius: 8,
+                        padding: "0.5rem 0.75rem",
+                        cursor: "pointer",
+                        fontSize: "0.875rem",
+                        color: "var(--text)",
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
