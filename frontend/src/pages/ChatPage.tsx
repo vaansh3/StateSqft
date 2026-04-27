@@ -303,14 +303,14 @@ export function ChatPage() {
             onClick={() => setHelpOpen(true)}
             title="Show example prompts"
             style={{
-              width: 22,
-              height: 22,
-              borderRadius: "50%",
-              border: "1px solid var(--border-strong)",
-              background: "var(--surface-raised)",
-              color: "var(--accent)",
-              fontWeight: 700,
-              fontSize: "0.78rem",
+              height: 26,
+              padding: "0 10px",
+              borderRadius: 6,
+              border: "none",
+              background: "var(--accent)",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "0.82rem",
               lineHeight: 1,
               cursor: "pointer",
               display: "flex",
@@ -319,7 +319,7 @@ export function ChatPage() {
               flexShrink: 0,
             }}
           >
-            ?
+            Help
           </button>
         </div>
         <div>
